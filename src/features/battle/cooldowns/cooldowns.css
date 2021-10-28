@@ -1,0 +1,13 @@
+.cooldowns-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.team-one-cooldowns {
+    grid-column : 1/2;
+    grid-row: 1/2;
+}
+.team-two-cooldowns {
+    grid-column : 2/2;
+    grid-row: 1;
+}

@@ -1,0 +1,12 @@
+.rendered-board {
+
+}
+
+.rendered-row {
+    display: flex;
+}
+
+.rendered-tile{
+    width: 25px;
+    height: 25px;
+}
