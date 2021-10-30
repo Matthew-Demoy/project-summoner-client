@@ -198,51 +198,22 @@ export const matchMakerABI = [
         type: "uint256",
       },
     ],
-    name: "getCooldown",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "bytes32",
-        name: "gameId",
-        type: "bytes32",
-      },
-    ],
-    name: "getMatch",
+    name: "getSummonerPosition",
     outputs: [
       {
         components: [
           {
-            internalType: "uint256[]",
-            name: "teamOne",
-            type: "uint256[]",
-          },
-          {
-            internalType: "uint256[]",
-            name: "teamTwo",
-            type: "uint256[]",
-          },
-          {
-            internalType: "uint8",
-            name: "mapId",
-            type: "uint8",
+            internalType: "uint256",
+            name: "x",
+            type: "uint256",
           },
           {
             internalType: "uint256",
-            name: "matchStart",
+            name: "y",
             type: "uint256",
           },
         ],
-        internalType: "struct MatchMaker.Match",
+        internalType: "struct League.position",
         name: "",
         type: "tuple",
       },

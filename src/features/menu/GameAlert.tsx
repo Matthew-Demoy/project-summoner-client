@@ -2,7 +2,7 @@ import { BigNumber } from "ethers";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { getMatchmakerContract } from "../../utils/ethers-utils/matchmaker-utils";
-import { getAllCooldowns, setMatchStartTime } from "../battle/battleSlice";
+import { getAllCooldowns, getAllPositions, getAllSummonerInfo, setMatchStartTime } from "../battle/battleSlice";
 import { saveGameId } from "./menuSlice";
 
 const GameAlert = () => {
@@ -16,27 +16,32 @@ const GameAlert = () => {
 
   const dispatch = useAppDispatch();
 
+  const matchmakerContract = getMatchmakerContract();
+
+  const createGameFilter = matchmakerContract.filters.createGameEvent(
+    address,
+    null
+  );
+  const startGameFilter = matchmakerContract.filters.startGameEvent(
+    null,
+    gameId
+  );
+
+
+
   useEffect(() => {
-    const matchmakerContract = getMatchmakerContract();
-
-    const createGameFilter = matchmakerContract.filters.createGameEvent(
-      address,
-      null
-    );
-    const startGameFilter = matchmakerContract.filters.startGameEvent(
-      null,
-      gameId
-    );
-
     matchmakerContract.once(createGameFilter, (summonerId, id, event) => {
       dispatch(saveGameId(id));
     });
-
+  
     matchmakerContract.once(startGameFilter , (sender, gameId, startTime, event) => {
       // sender, gameId, timeStamp
       dispatch(setMatchStartTime((startTime as BigNumber).toNumber()));
-      dispatch(getAllCooldowns({teamOne: teamOne, teamTwo : teamTwo}))
+      dispatch(getAllCooldowns({teamOne, teamTwo}));
+      dispatch(getAllSummonerInfo({teamOne, teamTwo}));
+      dispatch(getAllPositions({teamOne, teamTwo}));
     });
+    
   }, []);
 
   if (!matchStart) {

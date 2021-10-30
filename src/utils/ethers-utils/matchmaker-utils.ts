@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { matchMakerABI } from "../abis/matchmaker";
-import { projectSummonerAddress } from "../addresses";
+import { rarity } from "../abis/rarity";
+import { projectSummonerAddress, rarityContractAddress } from "../addresses";
 
 export const getMatchmakerContract = () => {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -12,4 +13,11 @@ export const getMatchmakerContract = () => {
     JSON.stringify(matchMakerABI),
     signer
   );
+};
+
+export const getRarityContract = () => {
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+  return new ethers.Contract(rarityContractAddress, rarity, provider);
+  
 };

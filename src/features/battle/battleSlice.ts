@@ -1,12 +1,18 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import {
+  createAsyncThunk,
+  createSlice,
+  PayloadAction,
+  isAnyOf,
+} from "@reduxjs/toolkit";
 import { useAppDispatch } from "../../app/hooks";
 import mockSummoners from "../../fixtures/mock-summoners";
 import { createGame } from "../menu/menuSlice";
-import { getSummonerCooldown } from "./battleAPI";
-type summonerInfo = {
-  cooldown: number;
-  id: number;
-};
+import {
+  getRaritySummonerInfo,
+  getSummonerCooldown,
+  getSummonerPosition,
+} from "./battleAPI";
+
 export interface battleState {
   matchStart: number | undefined;
   teamOne: summonerInfo[];
@@ -22,7 +28,6 @@ const initialState: battleState = {
 export const getCooldown = createAsyncThunk(
   "battle/getCooldown",
   async (action: number) => {
-    console.log(action);
     return await getSummonerCooldown(action);
   }
 );
@@ -31,7 +36,7 @@ export const getAllCooldowns = createAsyncThunk(
   "battle/getAllCooldowns",
   async (action: { teamOne: summonerInfo[]; teamTwo: summonerInfo[] }) => {
     const { teamOne, teamTwo } = action;
-
+    console.log("get all cooldowns")
     const t1Promise = teamOne
       .map((t) => t.id)
       .map((id) => getSummonerCooldown(id));
@@ -47,8 +52,62 @@ export const getAllCooldowns = createAsyncThunk(
     const t2Cooldowns = (await Promise.all(t2Promise)).map(
       (cooldown, index) => ({ ...teamTwo[index], cooldown })
     );
-      console.log(t1Cooldowns)
-      console.log(t2Cooldowns)
+    return {
+      teamOne: t1Cooldowns,
+      teamTwo: t2Cooldowns,
+    };
+  }
+);
+
+export const getAllPositions = createAsyncThunk(
+  "battle/getAllPositions",
+  async (action: { teamOne: summonerInfo[]; teamTwo: summonerInfo[] }) => {
+    
+    const { teamOne, teamTwo } = action;
+    const t1Promise = teamOne
+      .map((t) => t.id)
+      .map((id) => getSummonerPosition(id));
+
+    const t1Cooldowns = (await Promise.all(t1Promise)).map(
+      (position, index) => ({ ...teamOne[index], position })
+    );
+
+    const t2Promise = teamTwo
+      .map((t) => t.id)
+      .map((id) => getSummonerPosition(id));
+
+    const t2Cooldowns = (await Promise.all(t2Promise)).map(
+      (position, index) => ({ ...teamTwo[index], position })
+    );
+    return {
+      teamOne: t1Cooldowns,
+      teamTwo: t2Cooldowns,
+    };
+  }
+);
+
+export const getAllSummonerInfo = createAsyncThunk(
+  "battle/getAllSummonerInfo",
+  async (action: { teamOne: summonerInfo[]; teamTwo: summonerInfo[] }) => {
+    const { teamOne, teamTwo } = action;
+
+    const t1Promise = teamOne
+      .map((t) => t.id)
+      .map((id) => getRaritySummonerInfo(id));
+
+    const t1Cooldowns = (await Promise.all(t1Promise)).map((info, index) => ({
+      ...teamOne[index],
+      ...info,
+    }));
+
+    const t2Promise = teamTwo
+      .map((t) => t.id)
+      .map((id) => getRaritySummonerInfo(id));
+
+    const t2Cooldowns = (await Promise.all(t2Promise)).map((info, index) => ({
+      ...teamTwo[index],
+      ...info,
+    }));
     return {
       teamOne: t1Cooldowns,
       teamTwo: t2Cooldowns,
@@ -66,17 +125,17 @@ export const battleSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(createGame.pending, (state, action) => {
-      console.log(action.meta.arg.teamOne);
-      console.log(action.meta.arg.teamTwo);
-      const teamOne = action.meta.arg.teamOne.map((s) => {
+      const teamOne = action.meta.arg.teamOne.map((s, i) => {
         return {
+          ...state.teamOne[i],
           id: parseInt(s),
           cooldown: Date.now(),
         };
       });
 
-      const teamTwo = action.meta.arg.teamTwo.map((s) => {
+      const teamTwo = action.meta.arg.teamTwo.map((s, i) => {
         return {
+          ...state.teamTwo[i],
           id: parseInt(s),
           cooldown: Date.now(),
         };
@@ -87,7 +146,6 @@ export const battleSlice = createSlice({
 
     builder.addCase(getCooldown.fulfilled, (state, action) => {
       const { meta, payload } = action;
-      console.log("cooldown fufillled " + payload);
       const teamOne = state.teamOne.map((s) => {
         if (s.id === meta.arg) {
           s.cooldown = payload;
@@ -104,17 +162,23 @@ export const battleSlice = createSlice({
 
       return { ...state, teamOne, teamTwo };
     });
-
-    builder.addCase(getAllCooldowns.fulfilled, (state, action) => {
-      const {
-        payload: { teamOne, teamTwo },
-      } = action;
-      return {
-        ...state,
-        teamOne,
-        teamTwo,
-      };
-    });
+    builder.addMatcher(
+      isAnyOf(
+        getAllCooldowns.fulfilled,
+        getAllSummonerInfo.fulfilled,
+        getAllPositions.fulfilled
+      ),
+      (state, action) => {
+        const {
+          payload: { teamOne, teamTwo },
+        } = action;
+        return {
+          ...state,
+          teamOne,
+          teamTwo,
+        };
+      }
+    );
   },
 });
 
