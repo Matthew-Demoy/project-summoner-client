@@ -1,12 +1,37 @@
 .rendered-board {
-
 }
 
 .rendered-row {
-    display: flex;
+  display: flex;
 }
 
-.rendered-tile{
-    width: 25px;
-    height: 25px;
+.rendered-tile {
+  width: 25px;
+  height: 25px;
+  cursor: default;
+}
+
+.summoner-tile {
+  cursor: pointer;
+}
+
+.selected-summoner{
+    background-color: green;
+}
+
+.moveable-tile {
+  cursor: pointer;
+}
+
+.path-tile {
+  background-color: greenyellow;
+  color:green
+}
+
+.team-one{
+  color: blue;
+}
+
+.team-two{
+  color: red
 }

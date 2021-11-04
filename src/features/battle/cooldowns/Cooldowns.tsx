@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAppSelector } from "../../../app/hooks";
-import './cooldowns.css'
+import "./cooldowns.css";
 const Countdown = (props: number) => {
   const calculateTimeLeft = () => {
     return props - Math.floor(Date.now() / 1000);
@@ -10,13 +10,10 @@ const Countdown = (props: number) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setTimeLeft(calculateTimeLeft());
-      if(timeLeft <= 0)
-      {
+      if (timeLeft <= 0) {
         clearTimeout(timer);
       }
     }, 1000);
-
-   
   });
 
   if (timeLeft > 0) {
@@ -26,21 +23,24 @@ const Countdown = (props: number) => {
   }
 };
 const Cooldowns = () => {
-  //get summoner cooldown
+  // get summoner cooldown
   // cooldown - block.timeStamp
 
-  const teamOneCooldowns = useAppSelector((state) => {
-    return [...state.battle.teamOne.map((t) => t.cooldown)];
-  });
-
-  const teamTwoCooldowns = useAppSelector((state) => {
-    return [...state.battle.teamTwo.map((t) => t.cooldown)];
+  const [teamOneCooldowns, teamTwoCooldowns] = useAppSelector((state) => {
+    return [
+      state.battle.summoners.filter((t) => t.team === 1).map((t) => t.cooldown),
+      state.battle.summoners.filter((t) => t.team === 2).map((t) => t.cooldown),
+    ];
   });
 
   return (
-    <div className='cooldowns-container'>
-      <div className='team-one-cooldowns'>{teamOneCooldowns.map((t) => Countdown(t))}</div>
-      <div className='team-two-cooldowns'>{teamTwoCooldowns.map((t) => Countdown(t))}</div>
+    <div className="cooldowns-container">
+      <div className="team-one-cooldowns">
+        {teamOneCooldowns.map((t) => Countdown(t))}
+      </div>
+      <div className="team-two-cooldowns">
+        {teamTwoCooldowns.map((t) => Countdown(t))}
+      </div>
     </div>
   );
 };

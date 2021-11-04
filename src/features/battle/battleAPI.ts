@@ -28,11 +28,10 @@ export const getRaritySummonerInfo = async (summonerId: number) => {
   const rarity = getRarityContract();
 
   const res = await rarity.summoner(summonerId);
-
   return {
-    class: res._class.toNumber(),
-    level: res._level.toNumber(),
-    log: res._log.toNumber(),
-    xp: res.xp.toNumber(),
+    class: res._class.toNumber() || 0,
+    level: res._level.toNumber() || 0,
+    log:  0,
+    xp:  0,
   };
 };

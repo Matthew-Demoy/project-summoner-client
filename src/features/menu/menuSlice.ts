@@ -28,17 +28,20 @@ export const getWeb3 = createAsyncThunk("menu/getWeb3", async () => {
 
 export const createGame = createAsyncThunk(
   "menu/createGame",
-  async (action: { teamOne: string[]; teamTwo: string[] }) => {
-    return await fetchCreateGame(action);
+  async (action: string[]) => {
+    return await fetchCreateGame({
+      teamOne: action.slice(0, action.length / 2 - 1),
+      teamTwo: action.slice(action.length / 2, action.length),
+    });
   }
 );
 
 export const startGame = createAsyncThunk(
-    "menu/startGame",
-    async (action: { teamOne: string[]; teamTwo: string[], gameId: string }) => {
-      return await fetchStartGame(action);
-    }
-  );
+  "menu/startGame",
+  async (action: { teamOne: string[]; teamTwo: string[]; gameId: string }) => {
+    return await fetchStartGame(action);
+  }
+);
 
 export const menuSlice = createSlice({
   name: "menu",
@@ -46,7 +49,7 @@ export const menuSlice = createSlice({
   reducers: {
     saveGameId: (state, action: PayloadAction<number>) => {
       state.gameId = action.payload;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(getWeb3.fulfilled, (state, action) => {
@@ -58,6 +61,6 @@ export const menuSlice = createSlice({
   },
 });
 
-export const {saveGameId} =  menuSlice.actions;
+export const { saveGameId } = menuSlice.actions;
 
 export default menuSlice.reducer;

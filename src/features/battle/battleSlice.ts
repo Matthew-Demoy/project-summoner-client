@@ -4,25 +4,30 @@ import {
   PayloadAction,
   isAnyOf,
 } from "@reduxjs/toolkit";
-import { useAppDispatch } from "../../app/hooks";
 import mockSummoners from "../../fixtures/mock-summoners";
+import { TileType } from "../../utils/tileType";
 import { createGame } from "../menu/menuSlice";
 import {
   getRaritySummonerInfo,
   getSummonerCooldown,
   getSummonerPosition,
 } from "./battleAPI";
+import { map } from "./map/map";
 
 export interface battleState {
   matchStart: number | undefined;
-  teamOne: summonerInfo[];
-  teamTwo: summonerInfo[];
+  summoners: summonerInfo[];
+  selectedSummoner: number;
+  potentialActions: PotentialActions;
 }
 
 const initialState: battleState = {
   matchStart: undefined,
-  teamOne: mockSummoners.slice(0, 4),
-  teamTwo: mockSummoners.slice(4, 8),
+  summoners: mockSummoners,
+  selectedSummoner: 0,
+  potentialActions: {
+    preMoves: [],
+  },
 };
 
 export const getCooldown = createAsyncThunk(
@@ -34,86 +39,156 @@ export const getCooldown = createAsyncThunk(
 
 export const getAllCooldowns = createAsyncThunk(
   "battle/getAllCooldowns",
-  async (action: { teamOne: summonerInfo[]; teamTwo: summonerInfo[] }) => {
-    const { teamOne, teamTwo } = action;
-    console.log("get all cooldowns")
-    const t1Promise = teamOne
+  async (summoners: summonerInfo[]) => {
+    const cooldownPromise = summoners
       .map((t) => t.id)
       .map((id) => getSummonerCooldown(id));
 
-    const t1Cooldowns = (await Promise.all(t1Promise)).map(
-      (cooldown, index) => ({ ...teamOne[index], cooldown })
+    const cooldowns = (await Promise.all(cooldownPromise)).map(
+      (cooldown, index) => ({ cooldown })
     );
 
-    const t2Promise = teamTwo
-      .map((t) => t.id)
-      .map((id) => getSummonerCooldown(id));
-
-    const t2Cooldowns = (await Promise.all(t2Promise)).map(
-      (cooldown, index) => ({ ...teamTwo[index], cooldown })
-    );
-    return {
-      teamOne: t1Cooldowns,
-      teamTwo: t2Cooldowns,
-    };
+    return cooldowns;
   }
 );
 
 export const getAllPositions = createAsyncThunk(
   "battle/getAllPositions",
-  async (action: { teamOne: summonerInfo[]; teamTwo: summonerInfo[] }) => {
-    
-    const { teamOne, teamTwo } = action;
-    const t1Promise = teamOne
+  async (summoners: summonerInfo[]) => {
+    const positionPromise = summoners
       .map((t) => t.id)
       .map((id) => getSummonerPosition(id));
 
-    const t1Cooldowns = (await Promise.all(t1Promise)).map(
-      (position, index) => ({ ...teamOne[index], position })
+    const summonerCooldowns = (await Promise.all(positionPromise)).map(
+      (position, index) => ({ position })
     );
 
-    const t2Promise = teamTwo
-      .map((t) => t.id)
-      .map((id) => getSummonerPosition(id));
-
-    const t2Cooldowns = (await Promise.all(t2Promise)).map(
-      (position, index) => ({ ...teamTwo[index], position })
-    );
-    return {
-      teamOne: t1Cooldowns,
-      teamTwo: t2Cooldowns,
-    };
+    return summonerCooldowns;
   }
 );
 
 export const getAllSummonerInfo = createAsyncThunk(
   "battle/getAllSummonerInfo",
-  async (action: { teamOne: summonerInfo[]; teamTwo: summonerInfo[] }) => {
-    const { teamOne, teamTwo } = action;
-
-    const t1Promise = teamOne
+  async (summoners: summonerInfo[]) => {
+    const infoPromise = summoners
       .map((t) => t.id)
       .map((id) => getRaritySummonerInfo(id));
+    const summonerInfo = (await Promise.all(infoPromise)).map(
+      (info, index) => ({
+        ...info,
+      })
+    );
 
-    const t1Cooldowns = (await Promise.all(t1Promise)).map((info, index) => ({
-      ...teamOne[index],
-      ...info,
-    }));
-
-    const t2Promise = teamTwo
-      .map((t) => t.id)
-      .map((id) => getRaritySummonerInfo(id));
-
-    const t2Cooldowns = (await Promise.all(t2Promise)).map((info, index) => ({
-      ...teamTwo[index],
-      ...info,
-    }));
-    return {
-      teamOne: t1Cooldowns,
-      teamTwo: t2Cooldowns,
-    };
+    return summonerInfo;
   }
 );
+
+const calculatePath = (
+  board: TileType[][],
+  summonerPositions: position[],
+  startingPosition: position,
+  desiredPosition: position
+) => {
+  let paths: position[][] = [[startingPosition]];
+  let visitedTiles: position[] = [startingPosition];
+  let moveCount = 0;
+  while (
+    !paths.find(
+      (pos) =>
+        pos[pos.length - 1].x === desiredPosition.x &&
+        pos[pos.length - 1].y === desiredPosition.y
+    )
+  ) {
+    let newPaths: position[][] = [];
+    while (paths.length > 0) {
+      const currentPath = paths.pop();
+      if (currentPath === undefined) {
+        console.log("no path");
+        break;
+      }
+      const lastPosition = currentPath[currentPath.length - 1];
+
+      if (
+        lastPosition.x + 1 < board[0].length &&
+        !summonerPositions.find(
+          (s) => s.x === lastPosition.x + 1 && s.y === lastPosition.y
+        ) &&
+        !visitedTiles.find(
+          (e) => e.x === lastPosition.x + 1 && e.y === lastPosition.y
+        )
+      ) {
+        newPaths.push([
+          ...currentPath,
+          { x: lastPosition.x + 1, y: lastPosition.y },
+        ]);
+
+        visitedTiles.push({ x: lastPosition.x + 1, y: lastPosition.y });
+      }
+
+      if (
+        lastPosition.x - 1 < board[0].length &&
+        !summonerPositions.find(
+          (s) => s.x === lastPosition.x - 1 && s.y === lastPosition.y
+        ) &&
+        !visitedTiles.find(
+          (e) => e.x === lastPosition.x - 1 && e.y === lastPosition.y
+        )
+      ) {
+        newPaths.push([
+          ...currentPath,
+          { x: lastPosition.x - 1, y: lastPosition.y },
+        ]);
+        visitedTiles.push({ x: lastPosition.x - 1, y: lastPosition.y });
+      }
+
+      if (
+        lastPosition.y + 1 < board.length &&
+        !summonerPositions.find(
+          (s) => s.x === lastPosition.x && s.y === lastPosition.y + 1
+        ) &&
+        !visitedTiles.find(
+          (e) => e.x === lastPosition.x && e.y === lastPosition.y + 1
+        )
+      ) {
+        newPaths.push([
+          ...currentPath,
+          { x: lastPosition.x, y: lastPosition.y + 1 },
+        ]);
+        visitedTiles.push({ x: lastPosition.x, y: lastPosition.y + 1 });
+      }
+
+      if (
+        lastPosition.y - 1 < board.length &&
+        !summonerPositions.find(
+          (s) => s.x === lastPosition.x && s.y === lastPosition.y - 1
+        ) &&
+        !visitedTiles.find(
+          (e) => e.x === lastPosition.x && e.y === lastPosition.y - 1
+        )
+      ) {
+        newPaths.push([
+          ...currentPath,
+          { x: lastPosition.x, y: lastPosition.y - 1 },
+        ]);
+        visitedTiles.push({ x: lastPosition.x, y: lastPosition.y - 1 });
+      }
+    }
+    paths = newPaths;
+    if (moveCount === 50) {
+      return undefined;
+    }
+    moveCount++;
+  }
+
+  console.log(moveCount);
+  return paths
+    .find(
+      (pos) =>
+        pos[pos.length - 1].x === desiredPosition.x &&
+        pos[pos.length - 1].y === desiredPosition.y
+    )
+    ?.slice(1);
+};
 
 export const battleSlice = createSlice({
   name: "battle",
@@ -122,45 +197,61 @@ export const battleSlice = createSlice({
     setMatchStartTime: (state, action: PayloadAction<number>) => {
       state.matchStart = action.payload;
     },
+    selectSummoner: (state, action: PayloadAction<number>) => {
+      state.summoners = state.summoners.map((s) => ({
+        ...s,
+        selected: action.payload === s.id,
+      }));
+    },
+    moveSummoner: (state, action: PayloadAction<position>) => {
+      const { summoners } = state;
+      const activeSummonerPos = summoners.find((s) => s.selected)?.position;
+
+      if (!activeSummonerPos) {
+        return state;
+      }
+      const path = calculatePath(
+        map,
+        summoners.map((s) => s.position),
+        activeSummonerPos,
+        action.payload
+      );
+
+      if (!path) {
+        return state;
+      }
+
+      return {
+        ...state,
+        potentialActions: {
+          preMoves: path,
+        },
+      };
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(createGame.pending, (state, action) => {
-      const teamOne = action.meta.arg.teamOne.map((s, i) => {
+      const summoners = action.meta.arg.map((s, i) => {
         return {
-          ...state.teamOne[i],
+          ...state.summoners[i],
           id: parseInt(s),
           cooldown: Date.now(),
         };
       });
 
-      const teamTwo = action.meta.arg.teamTwo.map((s, i) => {
-        return {
-          ...state.teamTwo[i],
-          id: parseInt(s),
-          cooldown: Date.now(),
-        };
-      });
-
-      return { ...state, teamOne, teamTwo };
+      return { ...state, summoners };
     });
 
     builder.addCase(getCooldown.fulfilled, (state, action) => {
       const { meta, payload } = action;
-      const teamOne = state.teamOne.map((s) => {
+      const summoners = state.summoners.map((s) => {
         if (s.id === meta.arg) {
           s.cooldown = payload;
         }
         return s;
       });
 
-      const teamTwo = state.teamTwo.map((s) => {
-        if (s.id === meta.arg) {
-          s.cooldown = payload;
-        }
-        return s;
-      });
-
-      return { ...state, teamOne, teamTwo };
+      return { ...state, summoners };
     });
     builder.addMatcher(
       isAnyOf(
@@ -169,19 +260,23 @@ export const battleSlice = createSlice({
         getAllPositions.fulfilled
       ),
       (state, action) => {
-        const {
-          payload: { teamOne, teamTwo },
-        } = action;
+        const { payload: edits } = action;
+
+        const { summoners } = state;
+
         return {
           ...state,
-          teamOne,
-          teamTwo,
+          summoners: (edits as summonerInfo[]).map((s, i) => ({
+            ...summoners[i],
+            ...s,
+          })),
         };
       }
     );
   },
 });
 
-export const { setMatchStartTime } = battleSlice.actions;
+export const { setMatchStartTime, selectSummoner, moveSummoner } =
+  battleSlice.actions;
 
 export default battleSlice.reducer;

@@ -3,7 +3,6 @@ import { useAppDispatch } from "../../app/hooks";
 import { defaultTeamOne, defaultTeamTwo } from "../../utils/addresses";
 import { createGame } from "./menuSlice";
 
-
 const CreateGame = () => {
   const dispatch = useAppDispatch();
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -11,13 +10,17 @@ const CreateGame = () => {
     const target = e.target as HTMLFormElement;
     const teamSize = [1, 2, 3, 4];
     const teamOne = teamSize.map((index) => {
-      return target[`team-1-summoner-${index}`].value || defaultTeamOne[index - 1];
+      return (
+        target[`team-1-summoner-${index}`].value || defaultTeamOne[index - 1]
+      );
     });
 
     const teamTwo = teamSize.map((index) => {
-      return target[`team-2-summoner-${index}`].value || defaultTeamTwo[index - 1];
+      return (
+        target[`team-2-summoner-${index}`].value || defaultTeamTwo[index - 1]
+      );
     });
-    dispatch(createGame({ teamOne, teamTwo }));
+    dispatch(createGame([...teamOne, ...teamTwo]));
   };
   return (
     <form onSubmit={handleSubmit}>

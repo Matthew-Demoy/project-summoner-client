@@ -2,7 +2,9 @@ import { BigNumber } from "ethers";
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { getMatchmakerContract } from "../../utils/ethers-utils/matchmaker-utils";
-import { getAllCooldowns, getAllPositions, getAllSummonerInfo, setMatchStartTime } from "../battle/battleSlice";
+import {
+  setMatchStartTime,
+} from "../battle/battleSlice";
 import { saveGameId } from "./menuSlice";
 
 const GameAlert = () => {
@@ -10,7 +12,7 @@ const GameAlert = () => {
     return state.menu;
   });
 
-  const { matchStart, teamOne, teamTwo } = useAppSelector((state) => {
+  const { matchStart } = useAppSelector((state) => {
     return state.battle;
   });
 
@@ -27,22 +29,19 @@ const GameAlert = () => {
     gameId
   );
 
-
-
   useEffect(() => {
     matchmakerContract.once(createGameFilter, (summonerId, id, event) => {
       dispatch(saveGameId(id));
     });
-  
-    matchmakerContract.once(startGameFilter , (sender, gameId, startTime, event) => {
-      // sender, gameId, timeStamp
-      dispatch(setMatchStartTime((startTime as BigNumber).toNumber()));
-      dispatch(getAllCooldowns({teamOne, teamTwo}));
-      dispatch(getAllSummonerInfo({teamOne, teamTwo}));
-      dispatch(getAllPositions({teamOne, teamTwo}));
-    });
-    
-  }, []);
+
+    matchmakerContract.once(
+      startGameFilter,
+      (sender, gameId, startTime, event) => {
+        // sender, gameId, timeStamp
+        dispatch(setMatchStartTime((startTime as BigNumber).toNumber()));
+      }
+    );
+  });
 
   if (!matchStart) {
     return <span className="game-alert">Waiting for {gameId} to start</span>;

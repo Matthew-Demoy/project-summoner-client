@@ -10,11 +10,11 @@ import Board from "./map/Board";
 
 const Battle = () => {
   const dispatch = useAppDispatch();
-  const { teamOne, teamTwo } = useAppSelector((s) => s.battle);
+  const {  summoners } = useAppSelector((s) => s.battle);
   useEffect(() => {
-    dispatch(getAllCooldowns({ teamOne, teamTwo }));
-    dispatch(getAllSummonerInfo({ teamOne, teamTwo }));
-    dispatch(getAllPositions({ teamOne, teamTwo }));
+    dispatch(getAllCooldowns(summoners));
+    dispatch(getAllSummonerInfo(summoners));
+    dispatch(getAllPositions(summoners));
   }, []);
 
   return (
